@@ -19,4 +19,10 @@ mongoose
 app.use("/api/applications", require("./routes/applications"));
 app.use("/api/auth", require("./routes/auth"));
 
-app.listen(5000, () => console.log("Server running on port 5000"));
+// root health check
+app.get("/", (req, res) => {
+  res.status(200).send("Server is running");
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
