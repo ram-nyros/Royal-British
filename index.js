@@ -1,33 +1,31 @@
-require("dotenv").config(); // ✅ MUST be first
+require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
-const mongoose = require("mongoose");
+
+const connectDB = require("./config/db");
+const corsOptions = require("./config/cors");
 
 const app = express();
-const corsOptions = {
-  origin: process.env.ADMIN_URL || true,
-  credentials: true,
-};
+
+// Middlewares
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// 🔍 Debug (remove later)
-console.log("Mongo URI:", process.env.MONGO_URI);
+// DB
+connectDB();
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB error:", err));
-
+// Routes
 app.use("/api/applications", require("./routes/applications"));
-app.use("/api/auth", require("./routes/auth"));
+app.use("/api/auth", require("./routes/auth.routes"));
 app.use("/api/admin", require("./routes/admin"));
+app.use("/api/certificates", require("./routes/certificates"));
 
-// root health check
+// Health
 app.get("/", (req, res) => {
   res.status(200).send("Server is running");
 });
 
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

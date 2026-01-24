@@ -7,6 +7,7 @@ const UserSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+
     email: {
       type: String,
       required: true,
@@ -14,23 +15,33 @@ const UserSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+
     password: {
       type: String,
       required: true,
       minlength: 6,
     },
+
     role: {
       type: String,
       enum: ["user", "admin"],
       default: "user",
     },
+
+    // ✅ Certificates added correctly inside schema
+    certificates: [
+      {
+        title: { type: String, required: true },
+        file: { type: String, required: true },
+        uploadedAt: { type: Date, default: Date.now },
+      },
+    ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 /**
  * Hash password before save
- * NOTE: async hook → NO next()
  */
 UserSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
