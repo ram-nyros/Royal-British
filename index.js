@@ -37,8 +37,13 @@ app.use(
   }),
 );
 
-// Preflight handler
-app.options("*", cors());
+// Preflight handler (allow any path)
+// app.options("*", cors());
+
+// ✅ safe wildcard handler
+// app.options("/*", (req, res) => {
+//   res.sendStatus(200);
+// });
 
 /* ======================== */
 
