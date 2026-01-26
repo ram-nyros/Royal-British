@@ -1,22 +1,22 @@
+const bcrypt = require("bcryptjs");
 const User = require("../models/User");
-const { generateAccessToken, generateRefreshToken } = require("../utils/jwt");
+const { generateAccessToken } = require("../utils/jwt");
 
 exports.registerUser = async ({ name, email, password }) => {
+  if (!name || !email || !password) {
+    throw new Error("Name, email, and password are required");
+  }
+
   const existing = await User.findOne({ email });
+  if (existing) {
+    throw new Error("User already exists");
+  }
 
-  if (existing) throw new Error("User already exists");
+  const hashed = await bcrypt.hash(password, 10);
 
-  const user = new User({ name, email, password });
-  await user.save();
+  const user = await User.create({ name, email, password: hashed });
 
-  const accessToken = generateAccessToken({
-    id: user._id,
-    role: user.role,
-  });
-
-  const refreshToken = generateRefreshToken({
-    id: user._id,
-  });
+  const token = generateAccessToken({ id: user._id, role: user.role });
 
   return {
     user: {
@@ -25,28 +25,26 @@ exports.registerUser = async ({ name, email, password }) => {
       email: user.email,
       role: user.role,
     },
-    accessToken,
-    refreshToken,
+    token,
   };
 };
 
 exports.loginUser = async (email, password) => {
+  if (!email || !password) {
+    throw new Error("Email and password are required");
+  }
+
   const user = await User.findOne({ email }).select("+password");
+  if (!user) {
+    throw new Error("Invalid credentials");
+  }
 
-  if (!user) throw new Error("Invalid credentials");
+  const valid = await bcrypt.compare(password, user.password);
+  if (!valid) {
+    throw new Error("Invalid credentials");
+  }
 
-  const ok = await user.comparePassword(password);
-
-  if (!ok) throw new Error("Invalid credentials");
-
-  const accessToken = generateAccessToken({
-    id: user._id,
-    role: user.role,
-  });
-
-  const refreshToken = generateRefreshToken({
-    id: user._id,
-  });
+  const token = generateAccessToken({ id: user._id, role: user.role });
 
   return {
     user: {
@@ -54,9 +52,7 @@ exports.loginUser = async (email, password) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      certificates: user.certificates,
     },
-    accessToken,
-    refreshToken,
+    token,
   };
 };

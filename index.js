@@ -6,24 +6,19 @@ const cors = require("cors");
 const connectDB = require("./config/db");
 const corsOptions = require("./config/cors");
 
+const authRoutes = require("./routes/auth.routes");
+
 const app = express();
 
-// Middlewares
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// DB
 connectDB();
 
-// Routes
-app.use("/api/applications", require("./routes/applications"));
-app.use("/api/auth", require("./routes/auth.routes"));
-app.use("/api/admin", require("./routes/admin"));
-app.use("/api/certificates", require("./routes/certificates"));
+app.use("/api/auth", authRoutes);
 
-// Health
-app.get("/", (req, res) => {
-  res.status(200).send("Server is running");
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
 });
 
 const PORT = process.env.PORT || 5000;
