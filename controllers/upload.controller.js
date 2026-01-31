@@ -39,6 +39,12 @@ const createFileObject = (file) => ({
   uploadedAt: new Date(),
 });
 
+// Helper to build dataUrl from file object
+const buildDataUrl = (fileObj) => {
+  if (!fileObj || !fileObj.mimeType || !fileObj.data) return null;
+  return `data:${fileObj.mimeType};base64,${fileObj.data}`;
+};
+
 // Upload profile image
 exports.uploadProfileImage = async (req, res) => {
   try {
@@ -114,12 +120,10 @@ exports.uploadCertificate = async (req, res) => {
 
     let updateQuery;
     if (type === "other") {
-      // Add to otherDocuments array
       updateQuery = {
         $push: { "certificates.otherDocuments": fileObject },
       };
     } else {
-      // Set specific certificate
       updateQuery = {
         [`certificates.${type}`]: fileObject,
       };
@@ -135,13 +139,8 @@ exports.uploadCertificate = async (req, res) => {
 
     console.log("[UploadController] Certificate uploaded successfully");
     res.json({
-      message: `${type} uploaded successfully`,
-      certificate: {
-        type,
-        filename: fileObject.filename,
-        originalName: fileObject.originalName,
-        uploadedAt: fileObject.uploadedAt,
-      },
+      message: "Certificate uploaded successfully",
+      type,
     });
   } catch (error) {
     console.error("[UploadController] uploadCertificate error:", error.message);
@@ -149,21 +148,23 @@ exports.uploadCertificate = async (req, res) => {
   }
 };
 
-// Get file by type (for viewing/downloading)
+// Get file by type and optional fileId
 exports.getFile = async (req, res) => {
   try {
     console.log("[UploadController] getFile: Starting...");
     const { type, fileId } = req.params;
+    console.log("[UploadController] Type:", type, "FileId:", fileId);
 
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    let file;
+    let file = null;
+
     if (type === "profileImage") {
       file = user.profileImage;
-    } else if (type === "other") {
+    } else if (type === "other" && fileId) {
       file = user.certificates?.otherDocuments?.find(
         (doc) => doc._id.toString() === fileId,
       );
@@ -177,13 +178,14 @@ exports.getFile = async (req, res) => {
       return res.status(404).json({ message: "File not found" });
     }
 
-    // Convert base64 to buffer and send
     const buffer = Buffer.from(file.data, "base64");
     res.set({
       "Content-Type": file.mimeType,
       "Content-Disposition": `inline; filename="${file.originalName}"`,
       "Content-Length": buffer.length,
     });
+
+    console.log("[UploadController] File retrieved successfully");
     res.send(buffer);
   } catch (error) {
     console.error("[UploadController] getFile error:", error.message);
@@ -196,8 +198,10 @@ exports.deleteCertificate = async (req, res) => {
   try {
     console.log("[UploadController] deleteCertificate: Starting...");
     const { type, fileId } = req.params;
+    console.log("[UploadController] Type:", type, "FileId:", fileId);
 
     let updateQuery;
+
     if (type === "profileImage") {
       updateQuery = { $unset: { profileImage: 1 } };
     } else if (type === "other" && fileId) {
@@ -228,7 +232,7 @@ exports.deleteCertificate = async (req, res) => {
   }
 };
 
-// Get user profile with certificates info (without base64 data)
+// Get user profile with certificates info (includes dataUrl for display)
 exports.getProfileWithCertificates = async (req, res) => {
   try {
     console.log("[UploadController] getProfileWithCertificates: Starting...");
@@ -238,7 +242,7 @@ exports.getProfileWithCertificates = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Build response without base64 data
+    // Build response with dataUrl for direct display in browser
     const response = {
       _id: user._id,
       name: user.name,
@@ -254,6 +258,7 @@ exports.getProfileWithCertificates = async (req, res) => {
             mimeType: user.profileImage.mimeType,
             size: user.profileImage.size,
             uploadedAt: user.profileImage.uploadedAt,
+            dataUrl: buildDataUrl(user.profileImage),
           }
         : null,
       certificates: {
@@ -265,6 +270,7 @@ exports.getProfileWithCertificates = async (req, res) => {
               mimeType: user.certificates.tenthMarksheet.mimeType,
               size: user.certificates.tenthMarksheet.size,
               uploadedAt: user.certificates.tenthMarksheet.uploadedAt,
+              dataUrl: buildDataUrl(user.certificates.tenthMarksheet),
             }
           : null,
         interCertificate: user.certificates?.interCertificate
@@ -275,6 +281,7 @@ exports.getProfileWithCertificates = async (req, res) => {
               mimeType: user.certificates.interCertificate.mimeType,
               size: user.certificates.interCertificate.size,
               uploadedAt: user.certificates.interCertificate.uploadedAt,
+              dataUrl: buildDataUrl(user.certificates.interCertificate),
             }
           : null,
         degreeCertificate: user.certificates?.degreeCertificate
@@ -285,6 +292,7 @@ exports.getProfileWithCertificates = async (req, res) => {
               mimeType: user.certificates.degreeCertificate.mimeType,
               size: user.certificates.degreeCertificate.size,
               uploadedAt: user.certificates.degreeCertificate.uploadedAt,
+              dataUrl: buildDataUrl(user.certificates.degreeCertificate),
             }
           : null,
         otherDocuments:
@@ -295,6 +303,7 @@ exports.getProfileWithCertificates = async (req, res) => {
             mimeType: doc.mimeType,
             size: doc.size,
             uploadedAt: doc.uploadedAt,
+            dataUrl: buildDataUrl(doc),
           })) || [],
       },
       createdAt: user.createdAt,
