@@ -8,6 +8,7 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/auth.routes");
 const uploadRoutes = require("./routes/upload.routes");
 const applicationRoutes = require("./routes/applications");
+const adminRoutes = require("./routes/admin.routes");
 
 const app = express();
 
@@ -17,8 +18,10 @@ const app = express();
 
 const allowedOrigins = [
   "https://royal-british-frontend.onrender.com",
+  "https://royal-british-admin.onrender.com",
   "http://localhost:5173",
   "http://localhost:3000",
+  "http://localhost:5174",
 ];
 
 app.use(
@@ -57,6 +60,7 @@ connectDB();
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/applications", applicationRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
