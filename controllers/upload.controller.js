@@ -77,6 +77,7 @@ exports.uploadProfileImage = async (req, res) => {
         filename: user.profileImage.filename,
         originalName: user.profileImage.originalName,
         uploadedAt: user.profileImage.uploadedAt,
+        dataUrl: buildDataUrl(user.profileImage),
       },
     });
   } catch (error) {
@@ -138,9 +139,29 @@ exports.uploadCertificate = async (req, res) => {
     }
 
     console.log("[UploadController] Certificate uploaded successfully");
+    // Get the uploaded file with dataUrl
+    let uploadedFile = null;
+    if (type === "other") {
+      const docs = user.certificates?.otherDocuments || [];
+      uploadedFile = docs[docs.length - 1];
+    } else {
+      uploadedFile = user.certificates?.[type];
+    }
+
     res.json({
       message: "Certificate uploaded successfully",
       type,
+      file: uploadedFile
+        ? {
+            _id: uploadedFile._id,
+            filename: uploadedFile.filename,
+            originalName: uploadedFile.originalName,
+            mimeType: uploadedFile.mimeType,
+            size: uploadedFile.size,
+            uploadedAt: uploadedFile.uploadedAt,
+            dataUrl: buildDataUrl(uploadedFile),
+          }
+        : null,
     });
   } catch (error) {
     console.error("[UploadController] uploadCertificate error:", error.message);
@@ -341,7 +362,74 @@ exports.updateProfile = async (req, res) => {
     }
 
     console.log("[UploadController] Profile updated successfully");
-    res.json({ message: "Profile updated successfully", user });
+    // Return user with dataUrl for immediate display
+    const response = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      address: user.address,
+      role: user.role,
+      profileImage: user.profileImage
+        ? {
+            _id: user.profileImage._id,
+            filename: user.profileImage.filename,
+            originalName: user.profileImage.originalName,
+            mimeType: user.profileImage.mimeType,
+            size: user.profileImage.size,
+            uploadedAt: user.profileImage.uploadedAt,
+            dataUrl: buildDataUrl(user.profileImage),
+          }
+        : null,
+      certificates: {
+        tenthMarksheet: user.certificates?.tenthMarksheet
+          ? {
+              _id: user.certificates.tenthMarksheet._id,
+              filename: user.certificates.tenthMarksheet.filename,
+              originalName: user.certificates.tenthMarksheet.originalName,
+              mimeType: user.certificates.tenthMarksheet.mimeType,
+              size: user.certificates.tenthMarksheet.size,
+              uploadedAt: user.certificates.tenthMarksheet.uploadedAt,
+              dataUrl: buildDataUrl(user.certificates.tenthMarksheet),
+            }
+          : null,
+        interCertificate: user.certificates?.interCertificate
+          ? {
+              _id: user.certificates.interCertificate._id,
+              filename: user.certificates.interCertificate.filename,
+              originalName: user.certificates.interCertificate.originalName,
+              mimeType: user.certificates.interCertificate.mimeType,
+              size: user.certificates.interCertificate.size,
+              uploadedAt: user.certificates.interCertificate.uploadedAt,
+              dataUrl: buildDataUrl(user.certificates.interCertificate),
+            }
+          : null,
+        degreeCertificate: user.certificates?.degreeCertificate
+          ? {
+              _id: user.certificates.degreeCertificate._id,
+              filename: user.certificates.degreeCertificate.filename,
+              originalName: user.certificates.degreeCertificate.originalName,
+              mimeType: user.certificates.degreeCertificate.mimeType,
+              size: user.certificates.degreeCertificate.size,
+              uploadedAt: user.certificates.degreeCertificate.uploadedAt,
+              dataUrl: buildDataUrl(user.certificates.degreeCertificate),
+            }
+          : null,
+        otherDocuments:
+          user.certificates?.otherDocuments?.map((doc) => ({
+            _id: doc._id,
+            filename: doc.filename,
+            originalName: doc.originalName,
+            mimeType: doc.mimeType,
+            size: doc.size,
+            uploadedAt: doc.uploadedAt,
+            dataUrl: buildDataUrl(doc),
+          })) || [],
+      },
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+    res.json({ message: "Profile updated successfully", user: response });
   } catch (error) {
     console.error("[UploadController] updateProfile error:", error.message);
     res.status(500).json({ message: error.message });
