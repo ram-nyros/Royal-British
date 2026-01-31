@@ -7,6 +7,7 @@ const connectDB = require("./config/db");
 
 const authRoutes = require("./routes/auth.routes");
 const uploadRoutes = require("./routes/upload.routes");
+const applicationRoutes = require("./routes/applications");
 
 const app = express();
 
@@ -55,6 +56,7 @@ connectDB();
 
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/applications", applicationRoutes);
 
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
