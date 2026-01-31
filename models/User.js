@@ -35,6 +35,7 @@ const userSchema = new mongoose.Schema(
       zipCode: { type: String },
       country: { type: String },
     },
+    is_admin: { type: Boolean, default: false },
 
     // Certificates (10th marksheet, inter certificates, etc.)
     certificates: {
