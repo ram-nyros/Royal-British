@@ -6,8 +6,14 @@ const ApplicationSchema = new mongoose.Schema(
     email: String,
     mobile: String,
     course: String,
+    message: String,
+    status: {
+      type: String,
+      enum: ["pending", "reviewed", "approved", "rejected"],
+      default: "pending",
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Application", ApplicationSchema);

@@ -3,9 +3,14 @@ const Application = require("../models/Application");
 
 router.post("/", async (req, res) => {
   try {
-    console.log("[Applications] Received submission:", req.body);
+    console.log("[Applications] ========== NEW SUBMISSION ==========");
+    console.log(
+      "[Applications] Headers:",
+      JSON.stringify(req.headers, null, 2),
+    );
+    console.log("[Applications] Body:", JSON.stringify(req.body, null, 2));
 
-    const { name, email, mobile, course } = req.body;
+    const { name, email, mobile, course, message } = req.body;
 
     if (!name || !email || !mobile || !course) {
       console.log("[Applications] Missing required fields");
@@ -15,7 +20,13 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const application = new Application({ name, email, mobile, course });
+    const application = new Application({
+      name,
+      email,
+      mobile,
+      course,
+      message,
+    });
     await application.save();
 
     console.log(
