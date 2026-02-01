@@ -11,6 +11,43 @@ const buildDataUrl = (fileObj) => {
   return `data:${fileObj.mimeType};base64,${fileObj.data}`;
 };
 
+// Helper to build user with all dataUrls
+const buildUserWithDataUrls = (user) => {
+  return {
+    ...user,
+    profileImage: user.profileImage
+      ? {
+          ...user.profileImage,
+          dataUrl: buildDataUrl(user.profileImage),
+        }
+      : null,
+    certificates: {
+      tenthMarksheet: user.certificates?.tenthMarksheet
+        ? {
+            ...user.certificates.tenthMarksheet,
+            dataUrl: buildDataUrl(user.certificates.tenthMarksheet),
+          }
+        : null,
+      interCertificate: user.certificates?.interCertificate
+        ? {
+            ...user.certificates.interCertificate,
+            dataUrl: buildDataUrl(user.certificates.interCertificate),
+          }
+        : null,
+      degreeCertificate: user.certificates?.degreeCertificate
+        ? {
+            ...user.certificates.degreeCertificate,
+            dataUrl: buildDataUrl(user.certificates.degreeCertificate),
+          }
+        : null,
+      otherDocuments: (user.certificates?.otherDocuments || []).map((doc) => ({
+        ...doc,
+        dataUrl: buildDataUrl(doc),
+      })),
+    },
+  };
+};
+
 // Admin Login
 exports.login = async (req, res) => {
   try {
@@ -124,7 +161,7 @@ exports.getDashboardStats = async (req, res) => {
 exports.getUsers = async (req, res) => {
   try {
     console.log("[AdminController] Getting users list");
-    const { page = 1, limit = 10, search = "", status = "all" } = req.query;
+    const { page = 1, limit = 10, search = "" } = req.query;
 
     const query = { is_admin: { $ne: true } };
 
@@ -143,16 +180,8 @@ exports.getUsers = async (req, res) => {
       .select("-password")
       .lean();
 
-    // Add dataUrl for profile images
-    const usersWithDataUrl = users.map((user) => ({
-      ...user,
-      profileImage: user.profileImage
-        ? {
-            ...user.profileImage,
-            dataUrl: buildDataUrl(user.profileImage),
-          }
-        : null,
-    }));
+    // Add dataUrl for profile images and certificates
+    const usersWithDataUrl = users.map(buildUserWithDataUrls);
 
     res.json({
       users: usersWithDataUrl,
@@ -179,41 +208,8 @@ exports.getUserById = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Build dataUrls for all files
-    const response = {
-      ...user,
-      profileImage: user.profileImage
-        ? {
-            ...user.profileImage,
-            dataUrl: buildDataUrl(user.profileImage),
-          }
-        : null,
-      certificates: {
-        tenthMarksheet: user.certificates?.tenthMarksheet
-          ? {
-              ...user.certificates.tenthMarksheet,
-              dataUrl: buildDataUrl(user.certificates.tenthMarksheet),
-            }
-          : null,
-        interCertificate: user.certificates?.interCertificate
-          ? {
-              ...user.certificates.interCertificate,
-              dataUrl: buildDataUrl(user.certificates.interCertificate),
-            }
-          : null,
-        degreeCertificate: user.certificates?.degreeCertificate
-          ? {
-              ...user.certificates.degreeCertificate,
-              dataUrl: buildDataUrl(user.certificates.degreeCertificate),
-            }
-          : null,
-        otherDocuments:
-          user.certificates?.otherDocuments?.map((doc) => ({
-            ...doc,
-            dataUrl: buildDataUrl(doc),
-          })) || [],
-      },
-    };
+    // Build response with all dataUrls
+    const response = buildUserWithDataUrls(user);
 
     res.json({ user: response });
   } catch (error) {
